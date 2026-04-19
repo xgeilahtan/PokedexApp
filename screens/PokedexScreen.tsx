@@ -7,26 +7,22 @@ import { PokemonCard } from '../components/PokemonCard';
 export const PokedexScreen = () => {
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [search, setSearch] = useState('');
-  
-  // Novos estados para o Exercício 1
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true); // Garante que o loading inicia como true
-        setError(null);     // Limpa erros anteriores
+        setIsLoading(true);
+        setError(null);
         
         const list = await getPokemons(30);
         const details = await Promise.all(list.map(p => getPokemonDetails(p.url)));
         
         setPokemons(details);
       } catch (err) {
-        // Captura o erro lançado pela api.ts
         setError('Falha ao carregar Pokémons. Verifique sua conexão.');
       } finally {
-        // Executa independente de sucesso ou falha
         setIsLoading(false);
       }
     };
@@ -35,7 +31,6 @@ export const PokedexScreen = () => {
 
   const filtered = pokemons.filter(p => p.name.includes(search.toLowerCase()));
 
-  // Renderização condicional: Exibe o loading
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -45,7 +40,6 @@ export const PokedexScreen = () => {
     );
   }
 
-  // Renderização condicional: Exibe o erro
   if (error) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -54,7 +48,6 @@ export const PokedexScreen = () => {
     );
   }
 
-  // Renderização padrão da lista
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Pokédex</Text>
@@ -75,7 +68,7 @@ export const PokedexScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
-  centered: { justifyContent: 'center', alignItems: 'center' }, // Centraliza elementos de feedback
+  centered: { justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 32, fontWeight: 'bold', marginBottom: 12 },
   input: {
     backgroundColor: '#f1f1f1',
