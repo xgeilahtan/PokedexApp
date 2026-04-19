@@ -9,14 +9,16 @@ export const PokedexScreen = () => {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [offset, setOffset] = useState<number>(0);
+  const [isFetchingMore, setIsFetchingMore] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        const list = await getPokemons(30);
+        const list = await getPokemons(30, 0);
         const details = await Promise.all(list.map(p => getPokemonDetails(p.url)));
         
         setPokemons(details);
@@ -26,8 +28,27 @@ export const PokedexScreen = () => {
         setIsLoading(false);
       }
     };
-    fetchData();
+    fetchInitialData();
   }, []);
+
+  const loadMorePokemons = async () => {
+    if (isFetchingMore || isLoading || search.length > 0) return;
+
+    try {
+      setIsFetchingMore(true);
+      const newOffset = offset + 30;
+      
+      const list = await getPokemons(30, newOffset);
+      const details = await Promise.all(list.map(p => getPokemonDetails(p.url)));
+      
+      setPokemons(prevPokemons => [...prevPokemons, ...details]);
+      setOffset(newOffset);
+    } catch (err) {
+      console.error("Erro ao carregar mais Pokémons", err);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
 
   const filtered = pokemons.filter(p => p.name.includes(search.toLowerCase()));
 
@@ -55,23 +76,28 @@ export const PokedexScreen = () => {
         placeholder="Buscar pokémon..."
         style={styles.input}
         onChangeText={setSearch}
-        value={search} // Boa prática atrelar o valor do input ao estado
+        value={search}
       />
       <FlatList
-        data={filtered}
-        keyExtractor={item => item.id.toString()}
+        data={filtered || []}
+        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
         numColumns={2}
         renderItem={({ item }) => <PokemonCard pokemon={item} />}
-        // Propriedade nova para o Exercício 2:
-        ListEmptyComponent={() => (
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            {search ? (
-              <Text style={styles.emptyText}>Nenhum Pokémon encontrado para '{search}'.</Text>
-            ) : (
-              <Text style={styles.emptyText}>Nenhum Pokémon para exibir no momento.</Text>
-            )}
+            <Text style={styles.emptyText}>
+              {search ? `Nenhum Pokémon encontrado para '${search}'.` : 'Nenhum Pokémon para exibir no momento.'}
+            </Text>
           </View>
-        )}
+        }
+        onEndReached={loadMorePokemons}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={
+          isFetchingMore ? (
+            <ActivityIndicator size="large" color="#0000ff" style={styles.footerLoader} />
+          ) : null
+        }
+        scrollEnabled={filtered.length > 0}
       />
     </View>
   );
@@ -89,7 +115,6 @@ const styles = StyleSheet.create({
   },
   loadingText: { marginTop: 12, fontSize: 16, color: '#555' },
   errorText: { color: '#d9534f', fontSize: 16, textAlign: 'center', fontWeight: 'bold' },
-  // Estilos novos para o feedback de lista vazia
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
@@ -102,4 +127,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
+  footerLoader: {
+    marginVertical: 20,
+  }
 });
