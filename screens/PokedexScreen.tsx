@@ -55,12 +55,23 @@ export const PokedexScreen = () => {
         placeholder="Buscar pokémon..."
         style={styles.input}
         onChangeText={setSearch}
+        value={search} // Boa prática atrelar o valor do input ao estado
       />
       <FlatList
         data={filtered}
         keyExtractor={item => item.id.toString()}
         numColumns={2}
         renderItem={({ item }) => <PokemonCard pokemon={item} />}
+        // Propriedade nova para o Exercício 2:
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            {search ? (
+              <Text style={styles.emptyText}>Nenhum Pokémon encontrado para '{search}'.</Text>
+            ) : (
+              <Text style={styles.emptyText}>Nenhum Pokémon para exibir no momento.</Text>
+            )}
+          </View>
+        )}
       />
     </View>
   );
@@ -78,4 +89,17 @@ const styles = StyleSheet.create({
   },
   loadingText: { marginTop: 12, fontSize: 16, color: '#555' },
   errorText: { color: '#d9534f', fontSize: 16, textAlign: 'center', fontWeight: 'bold' },
+  // Estilos novos para o feedback de lista vazia
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
 });
