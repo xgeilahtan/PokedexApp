@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getPokemons, getPokemonDetails } from '../services/api';
 import { Pokemon } from '../types/Pokemon';
 import { PokemonCard } from '../components/PokemonCard';
 
 export const PokedexScreen = () => {
+  const insets = useSafeAreaInsets();
+
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -17,10 +20,10 @@ export const PokedexScreen = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const list = await getPokemons(30, 0);
         const details = await Promise.all(list.map(p => getPokemonDetails(p.url)));
-        
+
         setPokemons(details);
       } catch (err) {
         setError('Falha ao carregar Pokémons. Verifique sua conexão.');
@@ -37,10 +40,10 @@ export const PokedexScreen = () => {
     try {
       setIsFetchingMore(true);
       const newOffset = offset + 30;
-      
+
       const list = await getPokemons(30, newOffset);
       const details = await Promise.all(list.map(p => getPokemonDetails(p.url)));
-      
+
       setPokemons(prevPokemons => [...prevPokemons, ...details]);
       setOffset(newOffset);
     } catch (err) {
@@ -70,7 +73,7 @@ export const PokedexScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top + 20, 40) }]}>
       <Text style={styles.title}>Pokédex</Text>
       <TextInput
         placeholder="Buscar pokémon..."
@@ -79,32 +82,33 @@ export const PokedexScreen = () => {
         value={search}
       />
       <FlatList
-        data={filtered || []}
-        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+        data={filtered}
+        keyExtractor={item => item.id.toString()}
         numColumns={2}
         renderItem={({ item }) => <PokemonCard pokemon={item} />}
-        ListEmptyComponent={
+        ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {search ? `Nenhum Pokémon encontrado para '${search}'.` : 'Nenhum Pokémon para exibir no momento.'}
-            </Text>
+            {search ? (
+              <Text style={styles.emptyText}>Nenhum Pokémon encontrado para '{search}'.</Text>
+            ) : (
+              <Text style={styles.emptyText}>Nenhum Pokémon para exibir no momento.</Text>
+            )}
           </View>
-        }
+        )}
         onEndReached={loadMorePokemons}
         onEndReachedThreshold={0.1}
-        ListFooterComponent={
+        ListFooterComponent={() => (
           isFetchingMore ? (
             <ActivityIndicator size="large" color="#0000ff" style={styles.footerLoader} />
           ) : null
-        }
-        scrollEnabled={filtered.length > 0}
+        )}
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
+  container: { flex: 1, paddingHorizontal: 16 },
   centered: { justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 32, fontWeight: 'bold', marginBottom: 12 },
   input: {
